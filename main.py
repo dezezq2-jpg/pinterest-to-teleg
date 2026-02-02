@@ -2,10 +2,12 @@ import asyncio
 import logging
 import random
 import sys
+import threading
 from datetime import datetime, timedelta
 
 from aiogram import Bot
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
+from flask import Flask
 
 import config
 from database import init_db, is_published, mark_as_published
@@ -22,6 +24,17 @@ logging.basicConfig(
     ]
 )
 logger = logging.getLogger(__name__)
+
+# Flask app for Render Web Service (keeps the service alive)
+app = Flask(__name__)
+
+@app.route('/')
+def home():
+    return "Pinterest Bot is running! ✅"
+
+@app.route('/health')
+def health():
+    return {"status": "ok", "bot": "running"}
 
 # Initialize Bot
 bot = Bot(token=config.BOT_TOKEN) if config.BOT_TOKEN else None
@@ -70,20 +83,18 @@ async def job_publish_content():
     else:
         logger.error("Failed to publish candidate.")
 
-async def main():
+async def run_bot():
+    """Run the bot scheduler in background"""
     if not config.BOT_TOKEN:
         logger.critical("BOT_TOKEN is not set! Please edit .env or config.py")
-        # return # User might want to run it anyway to test scraper? No, bot will fail.
         
     init_db()
     
-    # Send a startup message or log
     logger.info("Pinterest Bot Started.")
     
     scheduler = AsyncIOScheduler()
     
     # Add job to run every 20 minutes
-    # We also run it immediately (after a short delay) to start
     scheduler.add_job(
         job_publish_content,
         'interval',
@@ -101,8 +112,17 @@ async def main():
     except (KeyboardInterrupt, SystemExit):
         logger.info("Bot stopped.")
 
+def start_bot_thread():
+    """Start bot in a separate thread"""
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+    loop.run_until_complete(run_bot())
+
 if __name__ == "__main__":
-    try:
-        asyncio.run(main())
-    except (KeyboardInterrupt, SystemExit):
-        pass
+    # Start bot in background thread
+    bot_thread = threading.Thread(target=start_bot_thread, daemon=True)
+    bot_thread.start()
+    
+    # Start Flask web server (required for Render Web Service)
+    port = int(config.PORT) if hasattr(config, 'PORT') else 10000
+    app.run(host='0.0.0.0', port=port)

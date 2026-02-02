@@ -6,9 +6,10 @@ load_dotenv()
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 CHANNEL_ID = os.getenv("CHANNEL_ID")
 ADMIN_ID = os.getenv("ADMIN_ID")
+PORT = os.getenv("PORT", "10000")
 
 # Pinterest Configuration
-PINTEREST_SEARCH_URL = "https://www.pinterest.com/search/pins/?q=toned%20women%20beach%20style&rs=typed"
+PINTEREST_SEARCH_URL = os.getenv("PINTEREST_SEARCH_URL", "https://www.pinterest.com/search/pins/?q=toned%20women%20beach%20style&rs=typed")
 
 # Delay Configuration (in minutes)
 PUBLISH_DELAY_MINUTES = 20
