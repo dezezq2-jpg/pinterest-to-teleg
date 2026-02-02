@@ -56,3 +56,10 @@ client_session: <aiohttp.client.ClientSession object at 0x0000023A932FCEC0>
 2026-02-02 20:40:19,874 - publisher - INFO - Successfully sent image: https://i.pinimg.com/736x/33/09/f7/3309f7541ef47d8dadbcb8823124a41b.jpg
 2026-02-02 20:40:19,924 - __main__ - INFO - Published and marked as done: 2462974793204396
 2026-02-02 20:40:19,927 - apscheduler.executors.default - INFO - Job "job_publish_content (trigger: interval[0:20:00], next run at: 2026-02-02 21:00:12 GMT)" executed successfully
+2026-02-02 21:00:12,577 - apscheduler.executors.default - INFO - Running job "job_publish_content (trigger: interval[0:20:00], next run at: 2026-02-02 21:20:12 GMT)" (scheduled at 2026-02-02 21:00:12.566660+00:00)
+2026-02-02 21:00:12,581 - __main__ - INFO - Starting scheduled job...
+2026-02-02 21:00:14,902 - parser - INFO - Found 6 valid items total.
+2026-02-02 21:00:14,911 - __main__ - INFO - Attempting to publish: 2040762329086685
+2026-02-02 21:00:16,691 - publisher - INFO - Successfully sent image: https://i.pinimg.com/736x/a4/79/c0/a479c0d03a5389ac723d7e4ae3b92104.jpg
+2026-02-02 21:00:16,730 - __main__ - INFO - Published and marked as done: 2040762329086685
+2026-02-02 21:00:16,731 - apscheduler.executors.default - INFO - Job "job_publish_content (trigger: interval[0:20:00], next run at: 2026-02-02 21:20:12 GMT)" executed successfully

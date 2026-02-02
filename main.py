@@ -2,7 +2,6 @@ import asyncio
 import logging
 import random
 import sys
-import threading
 from datetime import datetime, timedelta
 
 from aiogram import Bot
@@ -28,6 +27,10 @@ logger = logging.getLogger(__name__)
 # Flask app for Render Web Service (keeps the service alive)
 app = Flask(__name__)
 
+# Global bot instance
+bot = None
+scheduler = None
+
 @app.route('/')
 def home():
     return "Pinterest Bot is running! ✅"
@@ -35,9 +38,6 @@ def home():
 @app.route('/health')
 def health():
     return {"status": "ok", "bot": "running"}
-
-# Initialize Bot
-bot = Bot(token=config.BOT_TOKEN) if config.BOT_TOKEN else None
 
 async def job_publish_content():
     """
@@ -47,7 +47,7 @@ async def job_publish_content():
     logger.info("Starting scheduled job...")
     
     if not config.BOT_TOKEN or not config.CHANNEL_ID:
-        logger.error("BOT_TOKEN or CHANNEL_ID not set! check .env file.")
+        logger.error("BOT_TOKEN or CHANNEL_ID not set! check environment variables.")
         return
 
     # 1. Fetch content
@@ -58,10 +58,7 @@ async def job_publish_content():
         return
 
     # 2. Find a candidate to publish
-    # We only want to publish 1 item per cycle (every 20 mins)
     candidate = None
-    
-    # Shuffle to get random variety if multiple are new
     random.shuffle(items)
     
     for item in items:
@@ -83,15 +80,18 @@ async def job_publish_content():
     else:
         logger.error("Failed to publish candidate.")
 
-async def run_bot():
-    """Run the bot scheduler in background"""
+def init_bot():
+    """Initialize bot and scheduler - called once when gunicorn worker starts"""
+    global bot, scheduler
+    
     if not config.BOT_TOKEN:
-        logger.critical("BOT_TOKEN is not set! Please edit .env or config.py")
+        logger.critical("BOT_TOKEN is not set! Check environment variables.")
+        return
         
+    logger.info("Initializing Pinterest Bot...")
     init_db()
     
-    logger.info("Pinterest Bot Started.")
-    
+    bot = Bot(token=config.BOT_TOKEN)
     scheduler = AsyncIOScheduler()
     
     # Add job to run every 20 minutes
@@ -99,30 +99,16 @@ async def run_bot():
         job_publish_content,
         'interval',
         minutes=config.PUBLISH_DELAY_MINUTES,
-        next_run_time=datetime.now() + timedelta(seconds=5)
+        next_run_time=datetime.now() + timedelta(seconds=10)
     )
     
     scheduler.start()
-    logger.info(f"Scheduler started. Interval: {config.PUBLISH_DELAY_MINUTES} minutes.")
-    
-    # Keep alive
-    try:
-        while True:
-            await asyncio.sleep(3600)
-    except (KeyboardInterrupt, SystemExit):
-        logger.info("Bot stopped.")
+    logger.info(f"Pinterest Bot Started. Scheduler interval: {config.PUBLISH_DELAY_MINUTES} minutes.")
 
-def start_bot_thread():
-    """Start bot in a separate thread"""
-    loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(loop)
-    loop.run_until_complete(run_bot())
+# Initialize bot when module is loaded (gunicorn worker start)
+init_bot()
 
 if __name__ == "__main__":
-    # Start bot in background thread
-    bot_thread = threading.Thread(target=start_bot_thread, daemon=True)
-    bot_thread.start()
-    
-    # Start Flask web server (required for Render Web Service)
+    # For local testing
     port = int(config.PORT) if hasattr(config, 'PORT') else 10000
-    app.run(host='0.0.0.0', port=port)
+    app.run(host='0.0.0.0', port=port, debug=False)
