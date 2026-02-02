@@ -5,7 +5,7 @@ import sys
 from datetime import datetime, timedelta
 
 from aiogram import Bot
-from apscheduler.schedulers.asyncio import AsyncIOScheduler
+from apscheduler.schedulers.background import BackgroundScheduler
 from flask import Flask
 
 import config
@@ -24,7 +24,7 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-# Flask app for Render Web Service (keeps the service alive)
+# Flask app for Render Web Service
 app = Flask(__name__)
 
 # Global bot instance
@@ -39,25 +39,22 @@ def home():
 def health():
     return {"status": "ok", "bot": "running"}
 
-async def job_publish_content():
-    """
-    Scheduled job that runs every 20 minutes (or as configured).
-    It fetches content, picks ONE new item, and sends it.
-    """
+async def async_publish_job():
+    """Async job to publish content"""
     logger.info("Starting scheduled job...")
     
     if not config.BOT_TOKEN or not config.CHANNEL_ID:
-        logger.error("BOT_TOKEN or CHANNEL_ID not set! check environment variables.")
+        logger.error("BOT_TOKEN or CHANNEL_ID not set!")
         return
 
-    # 1. Fetch content
+    # Fetch content
     items = get_pinterest_images(config.PINTEREST_SEARCH_URL)
     
     if not items:
         logger.info("No items found.")
         return
 
-    # 2. Find a candidate to publish
+    # Find unpublished item
     candidate = None
     random.shuffle(items)
     
@@ -67,10 +64,10 @@ async def job_publish_content():
             break
             
     if not candidate:
-        logger.info("No new unpublished items found in this fetch.")
+        logger.info("No new unpublished items found.")
         return
 
-    # 3. Publish
+    # Publish
     logger.info(f"Attempting to publish: {candidate['id']}")
     success = await publish_photo(bot, candidate['url'])
     
@@ -80,35 +77,45 @@ async def job_publish_content():
     else:
         logger.error("Failed to publish candidate.")
 
+def job_wrapper():
+    """Wrapper to run async job in sync scheduler"""
+    try:
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        loop.run_until_complete(async_publish_job())
+        loop.close()
+    except Exception as e:
+        logger.error(f"Error in job: {e}")
+
 def init_bot():
-    """Initialize bot and scheduler - called once when gunicorn worker starts"""
+    """Initialize bot and scheduler"""
     global bot, scheduler
     
     if not config.BOT_TOKEN:
-        logger.critical("BOT_TOKEN is not set! Check environment variables.")
+        logger.critical("BOT_TOKEN is not set!")
         return
         
     logger.info("Initializing Pinterest Bot...")
     init_db()
     
     bot = Bot(token=config.BOT_TOKEN)
-    scheduler = AsyncIOScheduler()
     
-    # Add job to run every 20 minutes
+    # Use BackgroundScheduler instead of AsyncIOScheduler
+    scheduler = BackgroundScheduler()
+    
     scheduler.add_job(
-        job_publish_content,
+        job_wrapper,
         'interval',
         minutes=config.PUBLISH_DELAY_MINUTES,
         next_run_time=datetime.now() + timedelta(seconds=10)
     )
     
     scheduler.start()
-    logger.info(f"Pinterest Bot Started. Scheduler interval: {config.PUBLISH_DELAY_MINUTES} minutes.")
+    logger.info(f"Pinterest Bot Started! Interval: {config.PUBLISH_DELAY_MINUTES} minutes.")
 
-# Initialize bot when module is loaded (gunicorn worker start)
+# Initialize when module loads
 init_bot()
 
 if __name__ == "__main__":
-    # For local testing
     port = int(config.PORT) if hasattr(config, 'PORT') else 10000
     app.run(host='0.0.0.0', port=port, debug=False)
