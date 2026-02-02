@@ -1,0 +1,26 @@
+# Environment variables (sensitive data)
+.env
+
+# Database
+*.db
+bot_data.db
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# Debug files
+debug_page.html
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db

@@ -1,0 +1,58 @@
+2026-02-02 19:38:28,175 - __main__ - INFO - Pinterest Bot Started.
+2026-02-02 19:38:28,179 - apscheduler.scheduler - INFO - Adding job tentatively -- it will be properly scheduled when the scheduler starts
+2026-02-02 19:38:28,180 - apscheduler.scheduler - INFO - Added job "job_publish_content" to job store "default"
+2026-02-02 19:38:28,180 - apscheduler.scheduler - INFO - Scheduler started
+2026-02-02 19:38:28,180 - __main__ - INFO - Scheduler started. Interval: 20 minutes.
+2026-02-02 19:38:33,188 - apscheduler.executors.default - INFO - Running job "job_publish_content (trigger: interval[0:20:00], next run at: 2026-02-02 19:58:33 GMT)" (scheduled at 2026-02-02 19:38:33.178710+00:00)
+2026-02-02 19:38:33,189 - __main__ - INFO - Starting scheduled job...
+2026-02-02 19:38:34,049 - parser - INFO - Found 0 valid non-ad pins.
+2026-02-02 19:38:34,050 - __main__ - INFO - No items found.
+2026-02-02 19:38:34,050 - apscheduler.executors.default - INFO - Job "job_publish_content (trigger: interval[0:20:00], next run at: 2026-02-02 19:58:33 GMT)" executed successfully
+2026-02-02 19:40:18,413 - __main__ - INFO - Pinterest Bot Started.
+2026-02-02 19:40:18,416 - apscheduler.scheduler - INFO - Adding job tentatively -- it will be properly scheduled when the scheduler starts
+2026-02-02 19:40:18,417 - apscheduler.scheduler - INFO - Added job "job_publish_content" to job store "default"
+2026-02-02 19:40:18,417 - apscheduler.scheduler - INFO - Scheduler started
+2026-02-02 19:40:18,417 - __main__ - INFO - Scheduler started. Interval: 20 minutes.
+2026-02-02 19:40:23,431 - apscheduler.executors.default - INFO - Running job "job_publish_content (trigger: interval[0:20:00], next run at: 2026-02-02 20:00:23 GMT)" (scheduled at 2026-02-02 19:40:23.416000+00:00)
+2026-02-02 19:40:23,433 - __main__ - INFO - Starting scheduled job...
+2026-02-02 19:40:25,223 - parser - INFO - Found 0 valid non-ad pins.
+2026-02-02 19:40:25,226 - __main__ - INFO - No items found.
+2026-02-02 19:40:25,226 - apscheduler.executors.default - INFO - Job "job_publish_content (trigger: interval[0:20:00], next run at: 2026-02-02 20:00:23 GMT)" executed successfully
+2026-02-02 20:00:23,423 - apscheduler.executors.default - INFO - Running job "job_publish_content (trigger: interval[0:20:00], next run at: 2026-02-02 20:20:23 GMT)" (scheduled at 2026-02-02 20:00:23.416000+00:00)
+2026-02-02 20:00:23,424 - __main__ - INFO - Starting scheduled job...
+2026-02-02 20:00:25,131 - parser - INFO - Found 0 valid non-ad pins.
+2026-02-02 20:00:25,135 - __main__ - INFO - No items found.
+2026-02-02 20:00:25,136 - apscheduler.executors.default - INFO - Job "job_publish_content (trigger: interval[0:20:00], next run at: 2026-02-02 20:20:23 GMT)" executed successfully
+2026-02-02 20:16:59,657 - __main__ - INFO - Pinterest Bot Started.
+2026-02-02 20:16:59,660 - apscheduler.scheduler - INFO - Adding job tentatively -- it will be properly scheduled when the scheduler starts
+2026-02-02 20:16:59,660 - apscheduler.scheduler - INFO - Added job "job_publish_content" to job store "default"
+2026-02-02 20:16:59,660 - apscheduler.scheduler - INFO - Scheduler started
+2026-02-02 20:16:59,661 - __main__ - INFO - Scheduler started. Interval: 20 minutes.
+2026-02-02 20:17:04,667 - apscheduler.executors.default - INFO - Running job "job_publish_content (trigger: interval[0:20:00], next run at: 2026-02-02 20:37:04 GMT)" (scheduled at 2026-02-02 20:17:04.659533+00:00)
+2026-02-02 20:17:04,668 - __main__ - INFO - Starting scheduled job...
+2026-02-02 20:17:05,931 - parser - INFO - Found 6 valid items total.
+2026-02-02 20:17:05,932 - __main__ - INFO - Attempting to publish: 2040762329086685
+2026-02-02 20:17:09,665 - publisher - ERROR - Error sending photo to Telegram: Telegram server says - Forbidden: bot is not a member of the channel chat
+2026-02-02 20:17:09,668 - __main__ - ERROR - Failed to publish candidate.
+2026-02-02 20:17:09,669 - apscheduler.executors.default - INFO - Job "job_publish_content (trigger: interval[0:20:00], next run at: 2026-02-02 20:37:04 GMT)" executed successfully
+2026-02-02 20:20:03,474 - asyncio - ERROR - Unclosed client session
+client_session: <aiohttp.client.ClientSession object at 0x0000023A932FCEC0>
+2026-02-02 20:20:07,564 - __main__ - INFO - Pinterest Bot Started.
+2026-02-02 20:20:07,567 - apscheduler.scheduler - INFO - Adding job tentatively -- it will be properly scheduled when the scheduler starts
+2026-02-02 20:20:07,567 - apscheduler.scheduler - INFO - Added job "job_publish_content" to job store "default"
+2026-02-02 20:20:07,567 - apscheduler.scheduler - INFO - Scheduler started
+2026-02-02 20:20:07,568 - __main__ - INFO - Scheduler started. Interval: 20 minutes.
+2026-02-02 20:20:12,569 - apscheduler.executors.default - INFO - Running job "job_publish_content (trigger: interval[0:20:00], next run at: 2026-02-02 20:40:12 GMT)" (scheduled at 2026-02-02 20:20:12.566660+00:00)
+2026-02-02 20:20:12,569 - __main__ - INFO - Starting scheduled job...
+2026-02-02 20:20:13,570 - parser - INFO - Found 6 valid items total.
+2026-02-02 20:20:13,572 - __main__ - INFO - Attempting to publish: 351912467002017
+2026-02-02 20:20:14,525 - publisher - INFO - Successfully sent image: https://i.pinimg.com/736x/1e/48/86/1e4886adc638f4713b02da2d222821e5.jpg
+2026-02-02 20:20:14,535 - __main__ - INFO - Published and marked as done: 351912467002017
+2026-02-02 20:20:14,536 - apscheduler.executors.default - INFO - Job "job_publish_content (trigger: interval[0:20:00], next run at: 2026-02-02 20:40:12 GMT)" executed successfully
+2026-02-02 20:40:12,577 - apscheduler.executors.default - INFO - Running job "job_publish_content (trigger: interval[0:20:00], next run at: 2026-02-02 21:00:12 GMT)" (scheduled at 2026-02-02 20:40:12.566660+00:00)
+2026-02-02 20:40:12,580 - __main__ - INFO - Starting scheduled job...
+2026-02-02 20:40:18,514 - parser - INFO - Found 6 valid items total.
+2026-02-02 20:40:18,522 - __main__ - INFO - Attempting to publish: 2462974793204396
+2026-02-02 20:40:19,874 - publisher - INFO - Successfully sent image: https://i.pinimg.com/736x/33/09/f7/3309f7541ef47d8dadbcb8823124a41b.jpg
+2026-02-02 20:40:19,924 - __main__ - INFO - Published and marked as done: 2462974793204396
+2026-02-02 20:40:19,927 - apscheduler.executors.default - INFO - Job "job_publish_content (trigger: interval[0:20:00], next run at: 2026-02-02 21:00:12 GMT)" executed successfully

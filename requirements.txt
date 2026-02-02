@@ -1,0 +1,5 @@
+aiogram>=3.10
+requests
+beautifulsoup4
+apscheduler
+python-dotenv
