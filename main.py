@@ -81,17 +81,20 @@ async def async_publish_job():
 def job_wrapper():
     """Wrapper to run async job in sync scheduler"""
     try:
+        # Always create a fresh event loop
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
-        loop.run_until_complete(async_publish_job())
-        loop.close()
+        try:
+            loop.run_until_complete(async_publish_job())
+        finally:
+            # Don't close the loop, just clear it
+            asyncio.set_event_loop(None)
     except Exception as e:
-        logger.error(f"Error in job: {e}")
+        logger.error(f"Error in job: {e}", exc_info=True)
 
 def keep_alive():
     """Ping self to prevent Render from sleeping"""
     try:
-        # Get service URL from environment or use default
         service_url = "https://pinterest-to-teleg.onrender.com"
         requests.get(f"{service_url}/health", timeout=5)
         logger.info("Keep-alive ping sent")
@@ -122,7 +125,7 @@ def init_bot():
         next_run_time=datetime.now() + timedelta(seconds=10)
     )
     
-    # Keep-alive ping every 10 minutes to prevent sleeping
+    # Keep-alive ping every 10 minutes
     scheduler.add_job(
         keep_alive,
         'interval',
