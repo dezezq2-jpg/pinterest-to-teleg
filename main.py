@@ -2,6 +2,7 @@ import asyncio
 import logging
 import random
 import sys
+import requests
 from datetime import datetime, timedelta
 
 from aiogram import Bot
@@ -87,6 +88,16 @@ def job_wrapper():
     except Exception as e:
         logger.error(f"Error in job: {e}")
 
+def keep_alive():
+    """Ping self to prevent Render from sleeping"""
+    try:
+        # Get service URL from environment or use default
+        service_url = "https://pinterest-to-teleg.onrender.com"
+        requests.get(f"{service_url}/health", timeout=5)
+        logger.info("Keep-alive ping sent")
+    except Exception as e:
+        logger.warning(f"Keep-alive ping failed: {e}")
+
 def init_bot():
     """Initialize bot and scheduler"""
     global bot, scheduler
@@ -100,14 +111,23 @@ def init_bot():
     
     bot = Bot(token=config.BOT_TOKEN)
     
-    # Use BackgroundScheduler instead of AsyncIOScheduler
+    # Use BackgroundScheduler
     scheduler = BackgroundScheduler()
     
+    # Publish job every 20 minutes
     scheduler.add_job(
         job_wrapper,
         'interval',
         minutes=config.PUBLISH_DELAY_MINUTES,
         next_run_time=datetime.now() + timedelta(seconds=10)
+    )
+    
+    # Keep-alive ping every 10 minutes to prevent sleeping
+    scheduler.add_job(
+        keep_alive,
+        'interval',
+        minutes=10,
+        next_run_time=datetime.now() + timedelta(seconds=30)
     )
     
     scheduler.start()
