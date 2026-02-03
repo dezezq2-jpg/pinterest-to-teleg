@@ -129,7 +129,7 @@ def init_bot():
     scheduler.add_job(
         keep_alive,
         'interval',
-        minutes=10,
+        minutes=3,
         next_run_time=datetime.now() + timedelta(seconds=30)
     )
     
