@@ -1,12 +1,13 @@
+# main.py
 import asyncio
 import logging
-import random
+import signal
 import sys
-import requests
 from datetime import datetime, timedelta
 
+from aiohttp import ClientSession
 from aiogram import Bot
-from apscheduler.schedulers.background import BackgroundScheduler
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from flask import Flask
 
 import config
@@ -14,131 +15,125 @@ from database import init_db, is_published, mark_as_published
 from parser import get_pinterest_images
 from publisher import publish_photo
 
-# Configure Logging
+# -------------------------------------------------
+# Logging
+# -------------------------------------------------
 logging.basicConfig(
     level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    handlers=[
-        logging.FileHandler("bot.log", encoding='utf-8'),
-        logging.StreamHandler(sys.stdout)
-    ]
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+    handlers=[logging.FileHandler("bot.log", encoding="utf-8"), logging.StreamHandler(sys.stdout)],
 )
 logger = logging.getLogger(__name__)
 
-# Flask app for Render Web Service
+# -------------------------------------------------
+# Flask (health‑checks)
+# -------------------------------------------------
 app = Flask(__name__)
 
-# Global bot instance
-bot = None
-scheduler = None
-
-@app.route('/')
+@app.route("/")
 def home():
-    return "Pinterest Bot is running! ✅"
+    return "Pinterest Bot is running ✅"
 
-@app.route('/health')
+@app.route("/health")
 def health():
     return {"status": "ok", "bot": "running"}
 
+# -------------------------------------------------
+# Bot & Scheduler (singletons)
+# -------------------------------------------------
+bot: Bot | None = None
+scheduler: AsyncIOScheduler | None = None
+
 async def async_publish_job():
-    """Async job to publish content"""
-    logger.info("Starting scheduled job...")
-    
+    """Собираем, выбираем, публикуем."""
+    logger.info("▶️ Starting publish job")
     if not config.BOT_TOKEN or not config.CHANNEL_ID:
-        logger.error("BOT_TOKEN or CHANNEL_ID not set!")
+        logger.error("BOT_TOKEN or CHANNEL_ID missing")
         return
 
-    # Fetch content
-    items = get_pinterest_images(config.PINTEREST_SEARCH_URL)
-    
+    items = await get_pinterest_images(config.PINTEREST_SEARCH_URL)
     if not items:
-        logger.info("No items found.")
+        logger.info("🔍 No pins found")
         return
 
-    # Find unpublished item
-    candidate = None
+    # выбираем непубликовавшийся
     random.shuffle(items)
-    
-    for item in items:
-        if not is_published(item['id']):
-            candidate = item
-            break
-            
+    candidate = next((i for i in items if not is_published(i["id"])), None)
     if not candidate:
-        logger.info("No new unpublished items found.")
+        logger.info("✅ All pins already published")
         return
 
-    # Publish
-    logger.info(f"Attempting to publish: {candidate['id']}")
-    success = await publish_photo(bot, candidate['url'])
-    
+    success = await publish_photo(bot, candidate["url"])
     if success:
-        mark_as_published(candidate['id'])
-        logger.info(f"Published and marked as done: {candidate['id']}")
+        mark_as_published(candidate["id"])
+        logger.info(f"✅ Pin {candidate['id']} published")
     else:
-        logger.error("Failed to publish candidate.")
+        logger.warning(f"❗ Pin {candidate['id']} NOT published – will retry later")
 
-def job_wrapper():
-    """Wrapper to run async job in sync scheduler"""
+async def keep_alive():
+    """Ping to self (Render needs a request every few minutes)."""
+    url = "https://pinterest-to-teleg.onrender.com/health"
     try:
-        # Always create a fresh event loop
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-        try:
-            loop.run_until_complete(async_publish_job())
-        finally:
-            # Don't close the loop, just clear it
-            asyncio.set_event_loop(None)
-    except Exception as e:
-        logger.error(f"Error in job: {e}", exc_info=True)
+        async with ClientSession() as session:
+            async with session.get(url, timeout=5) as resp:
+                await resp.text()
+        logger.debug("💓 keep_alive OK")
+    except Exception as exc:
+        logger.warning(f"💓 keep_alive failed: {exc}")
 
-def keep_alive():
-    """Ping self to prevent Render from sleeping"""
-    try:
-        service_url = "https://pinterest-to-teleg.onrender.com"
-        requests.get(f"{service_url}/health", timeout=5)
-        logger.info("Keep-alive ping sent")
-    except Exception as e:
-        logger.warning(f"Keep-alive ping failed: {e}")
-
-def init_bot():
-    """Initialize bot and scheduler"""
+def start_bot_and_scheduler():
+    """Инициализация — вызывается один раз при импорте (gunicorn) и в __main__."""
     global bot, scheduler
-    
-    if not config.BOT_TOKEN:
-        logger.critical("BOT_TOKEN is not set!")
+    if bot is not None:
+        logger.warning("Bot already started – skipping")
         return
-        
-    logger.info("Initializing Pinterest Bot...")
+
+    logger.info("🚀 Initializing bot and scheduler")
     init_db()
-    
     bot = Bot(token=config.BOT_TOKEN)
-    
-    # Use BackgroundScheduler
-    scheduler = BackgroundScheduler()
-    
-    # Publish job every 20 minutes
+
+    scheduler = AsyncIOScheduler()
     scheduler.add_job(
-        job_wrapper,
-        'interval',
+        async_publish_job,
+        "interval",
         minutes=config.PUBLISH_DELAY_MINUTES,
-        next_run_time=datetime.now() + timedelta(seconds=10)
+        next_run_time=datetime.now() + timedelta(seconds=10),
+        id="publish_job",
+        misfire_grace_time=60,
     )
-    
-    # Keep-alive ping every 10 minutes
     scheduler.add_job(
         keep_alive,
-        'interval',
+        "interval",
         minutes=3,
-        next_run_time=datetime.now() + timedelta(seconds=30)
+        next_run_time=datetime.now() + timedelta(seconds=30),
+        id="keepalive",
+        misfire_grace_time=30,
     )
-    
     scheduler.start()
-    logger.info(f"Pinterest Bot Started! Interval: {config.PUBLISH_DELAY_MINUTES} minutes.")
+    logger.info("✅ Scheduler started")
 
-# Initialize when module loads
-init_bot()
+def _shutdown(*_):
+    """Graceful stop – called on SIGINT / SIGTERM."""
+    logger.info("🛑 Received termination signal – shutting down")
+    if scheduler:
+        scheduler.shutdown(wait=False)
+    if bot:
+        loop = asyncio.get_event_loop()
+        loop.run_until_complete(bot.session.close())
+    logger.info("✅ Shutdown complete")
+    sys.exit(0)
 
+# Register signal handlers (Render sends SIGTERM on restart)
+signal.signal(signal.SIGINT, _shutdown)
+signal.signal(signal.SIGTERM, _shutdown)
+
+# -------------------------------------------------
+# Run
+# -------------------------------------------------
 if __name__ == "__main__":
-    port = int(config.PORT) if hasattr(config, 'PORT') else 10000
-    app.run(host='0.0.0.0', port=port, debug=False)
+    # локальный запуск (no gunicorn)
+    start_bot_and_scheduler()
+    app.run(host="0.0.0.0", port=config.PORT, debug=False)
+else:
+    # gunicorn импортирует `app` → сразу стартуем бота/шедулер
+    start_bot_and_scheduler()
