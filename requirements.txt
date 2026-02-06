@@ -5,3 +5,5 @@ apscheduler
 python-dotenv
 flask
 gunicorn
+httpx
+
