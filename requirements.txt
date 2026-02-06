@@ -1,9 +1,8 @@
 aiogram>=3.10
-requests
 beautifulsoup4
 apscheduler
 python-dotenv
 flask
 gunicorn
-httpx
-
+httpx          # ← добавили
+requests       # ← оставляем, он ещё используется в keep‑alive (можно удалить, если захотите полностью async)

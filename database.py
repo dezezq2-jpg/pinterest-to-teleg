@@ -1,19 +1,18 @@
 # database.py
 import sqlite3
 import logging
-from contextlib import closing
 
 DB_NAME = "bot_data.db"
 logger = logging.getLogger(__name__)
 
 
-def _connect():
-    return sqlite3.connect(DB_NAME, detect_types=sqlite3.PARSE_DECLTYPES)
-
-
-def init_db():
+def init_db() -> None:
+    """
+    Создаёт таблицу `published`, если её ещё нет.
+    """
     try:
-        with closing(_connect()) as conn, conn.cursor() as cur:
+        with sqlite3.connect(DB_NAME) as conn:
+            cur = conn.cursor()
             cur.execute(
                 """
                 CREATE TABLE IF NOT EXISTS published (
@@ -28,18 +27,27 @@ def init_db():
 
 
 def is_published(pin_id: str) -> bool:
+    """
+    Возвращает True, если данный pin уже был опубликован.
+    """
     try:
-        with closing(_connect()) as conn, conn.cursor() as cur:
+        with sqlite3.connect(DB_NAME) as conn:
+            cur = conn.cursor()
             cur.execute("SELECT 1 FROM published WHERE id = ?", (pin_id,))
-            return cur.fetchone() is not None
+            result = cur.fetchone()
+            return result is not None
     except Exception as e:
         logger.error(f"Error checking published status: {e}")
         return False
 
 
-def mark_as_published(pin_id: str):
+def mark_as_published(pin_id: str) -> None:
+    """
+    Записывает pin_id в базу, чтобы не публиковать повторно.
+    """
     try:
-        with closing(_connect()) as conn, conn.cursor() as cur:
+        with sqlite3.connect(DB_NAME) as conn:
+            cur = conn.cursor()
             cur.execute(
                 "INSERT OR IGNORE INTO published (id) VALUES (?)", (pin_id,)
             )
